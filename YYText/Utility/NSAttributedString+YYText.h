@@ -619,6 +619,13 @@ NS_ASSUME_NONNULL_BEGIN
                                                        ascent:(CGFloat)ascent
                                                       descent:(CGFloat)descent;
 
++ (NSMutableAttributedString *)yy_attachmentStringWithContent:(nullable id)content
+                                                  contentMode:(UIViewContentMode)contentMode
+                                                        width:(CGFloat)width
+                                                       ascent:(CGFloat)ascent
+                                                      descent:(CGFloat)descent
+                                           accessibilityLabel:(NSString *)accessibilityLabel;
+
 /**
  Creates and returns an attachment.
  
@@ -652,6 +659,13 @@ NS_ASSUME_NONNULL_BEGIN
                                                attachmentSize:(CGSize)attachmentSize
                                                   alignToFont:(UIFont *)font
                                                     alignment:(YYTextVerticalAlignment)alignment;
+
++ (NSMutableAttributedString *)yy_attachmentStringWithContent:(nullable id)content
+                                                  contentMode:(UIViewContentMode)contentMode
+                                               attachmentSize:(CGSize)attachmentSize
+                                                  alignToFont:(UIFont *)font
+                                                    alignment:(YYTextVerticalAlignment)alignment
+                                           accessibilityLabel:(NSString *)accessibilityLabel;
 
 /**
  Creates and returns an attahment from a fourquare image as if it was an emoji.
