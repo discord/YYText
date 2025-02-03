@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
   We expose this method to find our YYTextHighlight, so we can track when a user is touching
  a link.
  */
-- (YYTextHighlight *)_getHighlightAtPoint:(CGPoint)point range:(NSRangePointer)range;
+- (nullable YYTextHighlight *)_getHighlightAtPoint:(CGPoint)point range:(NSRangePointer)range;
 
 #pragma mark - Accessing the Text Attributes
 ///=============================================================================
