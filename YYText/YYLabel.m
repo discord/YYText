@@ -32,31 +32,31 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     NSMutableAttributedString *_innerText; ///< nonnull
     YYTextLayout *_innerLayout;
     YYTextContainer *_innerContainer; ///< nonnull
-    
+
     NSMutableArray *_attachmentViews;
     NSMutableArray *_attachmentLayers;
-    
+
     NSRange _highlightRange; ///< current highlight range
     YYTextHighlight *_highlight; ///< highlight attribute in `_highlightRange`
     YYTextLayout *_highlightLayout; ///< when _state.showingHighlight=YES, this layout should be displayed
-    
+
     YYTextLayout *_shrinkInnerLayout;
     YYTextLayout *_shrinkHighlightLayout;
-    
+
     NSTimer *_longPressTimer;
     CGPoint _touchBeganPoint;
-    
+
     struct {
         unsigned int layoutNeedUpdate : 1;
         unsigned int showingHighlight : 1;
-        
+
         unsigned int trackingTouch : 1;
         unsigned int swallowTouch : 1;
         unsigned int touchMoved : 1;
-        
+
         unsigned int hasTapAction : 1;
         unsigned int hasLongPressAction : 1;
-        
+
         unsigned int contentsNeedFade : 1;
     } _state;
 }
@@ -180,7 +180,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     point = [self _convertPointToLayout:point];
     YYTextRange *textRange = [self._innerLayout textRangeAtPoint:point];
     if (!textRange) return nil;
-    
+
     NSUInteger startIndex = textRange.start.offset;
     if (startIndex == _innerText.length) {
         if (startIndex > 0) {
@@ -192,7 +192,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
                                                atIndex:startIndex
                                  longestEffectiveRange:&highlightRange
                                                inRange:NSMakeRange(0, _innerText.length)];
-    
+
     if (!highlight) return nil;
     if (range) *range = highlightRange;
     return highlight;
@@ -210,7 +210,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
         _shrinkHighlightLayout = [YYLabel _shrinkLayoutWithLayout:_highlightLayout];
         if (!_highlightLayout) _highlight = nil;
     }
-    
+
     if (_highlightLayout && !_state.showingHighlight) {
         _state.showingHighlight = YES;
         _state.contentsNeedFade = animated;
@@ -233,7 +233,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     _shrinkHighlightLayout = nil;
 }
 
-- (void)_endTrackedTouch:(NSSet *)touches {
+- (void)_endTrackedTouch:(NSSet *)touches wasTouchCancelled:(BOOL)wasTouchCancelled {
     [self _endLongPressTimer];
 
     UITouch *touch = touches.anyObject;
@@ -255,7 +255,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     if (_highlight) {
         if (!_state.touchMoved || [self _getHighlightAtPoint:point range:NULL] == _highlight) {
             YYTextAction tapAction = _highlight.tapAction ? _highlight.tapAction : _highlightTapAction;
-            if (tapAction) {
+            if (tapAction && !wasTouchCancelled) {
                 YYTextPosition *start = [YYTextPosition positionWithOffset:_highlightRange.location];
                 YYTextPosition *end = [YYTextPosition positionWithOffset:_highlightRange.location + _highlightRange.length affinity:YYTextAffinityBackward];
                 YYTextRange *range = [YYTextRange rangeWithStart:start end:end];
@@ -383,7 +383,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
 #else
     _shadowOffset = CGPointMake(shadow.shadowOffset.width, shadow.shadowOffset.height);
 #endif
-    
+
     _shadowBlurRadius = shadow.shadowBlurRadius;
     _attributedText = _innerText;
     [self _updateOuterLineBreakMode];
@@ -414,13 +414,13 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     ((YYTextAsyncLayer *)self.layer).displaysAsynchronously = NO;
     self.layer.contentsScale = [UIScreen mainScreen].scale;
     self.contentMode = UIViewContentModeRedraw;
-    
+
     _attachmentViews = [NSMutableArray new];
     _attachmentLayers = [NSMutableArray new];
-    
+
     _debugOption = [YYTextDebugOption sharedDebugOption];
     [YYTextDebugOption addDebugTarget:self];
-    
+
     _font = [self _defaultFont];
     _textColor = [UIColor blackColor];
     _textVerticalAlignment = YYTextVerticalAlignmentCenter;
@@ -434,7 +434,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     _clearContentsBeforeAsynchronouslyDisplay = YES;
     _fadeOnAsynchronouslyDisplay = YES;
     _fadeOnHighlight = YES;
-    
+
     self.isAccessibilityElement = YES;
 }
 
@@ -495,10 +495,10 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     if (_ignoreCommonProperties) {
         return _innerLayout.textBoundingSize;
     }
-    
+
     if (!_verticalForm && size.width <= 0) size.width = YYTextContainerMaxSize.width;
     if (_verticalForm && size.height <= 0) size.height = YYTextContainerMaxSize.height;
-    
+
     if ((!_verticalForm && size.width == self.bounds.size.width) ||
         (_verticalForm && size.height == self.bounds.size.height)) {
         [self _updateIfNeeded];
@@ -517,16 +517,16 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
             return layout.textBoundingSize;
         }
     }
-    
+
     if (!_verticalForm) {
         size.height = YYTextContainerMaxSize.height;
     } else {
         size.width = YYTextContainerMaxSize.width;
     }
-    
+
     YYTextContainer *container = [_innerContainer copy];
     container.size = size;
-    
+
     YYTextLayout *layout = [YYTextLayout layoutWithContainer:container text:_innerText];
     return layout.textBoundingSize;
 }
@@ -564,13 +564,13 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     [self _updateIfNeeded];
     UITouch *touch = touches.anyObject;
     CGPoint point = [touch locationInView:self];
-    
+
     _highlight = [self _getHighlightAtPoint:point range:&_highlightRange];
     _highlightLayout = nil;
     _shrinkHighlightLayout = nil;
     _state.hasTapAction = _textTapAction != nil;
     _state.hasLongPressAction = _textLongPressAction != nil;
-    
+
     if (_highlight || _textTapAction || _textLongPressAction) {
         _touchBeganPoint = point;
         _state.trackingTouch = YES;
@@ -590,10 +590,10 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
     [self _updateIfNeeded];
-    
+
     UITouch *touch = touches.anyObject;
     CGPoint point = [touch locationInView:self];
-    
+
     if (_state.trackingTouch) {
         if (!_state.touchMoved) {
             CGFloat moveH = point.x - _touchBeganPoint.x;
@@ -616,7 +616,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
             }
         }
     }
-    
+
     if (!_state.swallowTouch) {
         [super touchesMoved:touches withEvent:event];
     }
@@ -624,9 +624,9 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
     if (_state.trackingTouch) {
-        [self _endTrackedTouch:touches];
+        [self _endTrackedTouch:touches wasTouchCancelled:NO];
     }
-    
+
     if (!_state.swallowTouch) {
         [super touchesEnded:touches withEvent:event];
     }
@@ -635,7 +635,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event {
     if (_state.trackingTouch) {
-        [self _endTrackedTouch:touches];
+        [self _endTrackedTouch:touches wasTouchCancelled:YES];
     }
 
     if (!_state.swallowTouch) {
@@ -982,7 +982,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
 - (void)setTextLayout:(YYTextLayout *)textLayout {
     _innerLayout = textLayout;
     _shrinkInnerLayout = nil;
-    
+
     if (_ignoreCommonProperties) {
         _innerText = (NSMutableAttributedString *)textLayout.text;
         _innerContainer = textLayout.container.copy;
@@ -992,7 +992,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
             _innerText = [NSMutableAttributedString new];
         }
         [self _updateOuterTextProperties];
-        
+
         _innerContainer = textLayout.container.copy;
         if (!_innerContainer) {
             _innerContainer = [YYTextContainer new];
@@ -1001,7 +1001,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
         }
         [self _updateOuterContainerProperties];
     }
-    
+
     if (_displaysAsynchronously && _clearContentsBeforeAsynchronouslyDisplay) {
         [self _clearContents];
     }
@@ -1033,11 +1033,11 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     if (_preferredMaxLayoutWidth == 0) {
         YYTextContainer *container = [_innerContainer copy];
         container.size = YYTextContainerMaxSize;
-        
+
         YYTextLayout *layout = [YYTextLayout layoutWithContainer:container text:_innerText];
         return layout.textBoundingSize;
     }
-    
+
     CGSize containerSize = _innerContainer.size;
     if (!_verticalForm) {
         containerSize.height = YYTextContainerMaxSize.height;
@@ -1048,10 +1048,10 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
         containerSize.height = _preferredMaxLayoutWidth;
         if (containerSize.height == 0) containerSize.height = self.bounds.size.height;
     }
-    
+
     YYTextContainer *container = [_innerContainer copy];
     container.size = containerSize;
-    
+
     YYTextLayout *layout = [YYTextLayout layoutWithContainer:container text:_innerText];
     return layout.textBoundingSize;
 }
@@ -1069,7 +1069,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
 #pragma mark - YYTextAsyncLayerDelegate
 
 - (YYTextAsyncLayerDisplayTask *)newAsyncDisplayTask {
-    
+
     // capture current context
     BOOL contentsNeedFade = _state.contentsNeedFade;
     NSAttributedString *text = _innerText;
@@ -1087,13 +1087,13 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
         text = text.copy;
         container = container.copy;
     }
-    
+
     // create display task
     YYTextAsyncLayerDisplayTask *task = [YYTextAsyncLayerDisplayTask new];
-    
+
     task.willDisplay = ^(CALayer *layer) {
         [layer removeAnimationForKey:@"contents"];
-        
+
         // If the attachment is not in new layout, or we don't know the new layout currently,
         // the attachment should be removed.
         for (UIView *view in attachmentViews) {
@@ -1117,7 +1117,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     task.display = ^(CGContextRef context, CGSize size, BOOL (^isCancelled)(void)) {
         if (isCancelled()) return;
         if (text.length == 0) return;
-        
+
         YYTextLayout *drawLayout = layout;
         if (layoutNeedUpdate) {
             layout = [YYTextLayout layoutWithContainer:container text:text];
@@ -1126,7 +1126,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
             layoutUpdated = YES;
             drawLayout = shrinkLayout ? shrinkLayout : layout;
         }
-        
+
         CGSize boundingSize = drawLayout.textBoundingSize;
         CGPoint point = CGPointZero;
         if (verticalAlignment == YYTextVerticalAlignmentCenter) {
@@ -1167,7 +1167,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
             return;
         }
         [layer removeAnimationForKey:@"contents"];
-        
+
         __strong YYLabel *view = (YYLabel *)layer.delegate;
         if (!view) return;
         if (view->_state.layoutNeedUpdate && layoutUpdated) {
@@ -1175,7 +1175,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
             view->_shrinkInnerLayout = shrinkLayout;
             view->_state.layoutNeedUpdate = NO;
         }
-        
+
         CGSize size = layer.bounds.size;
         CGSize boundingSize = drawLayout.textBoundingSize;
         CGPoint point = CGPointZero;
@@ -1198,7 +1198,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
             if ([a.content isKindOfClass:[UIView class]]) [attachmentViews addObject:a.content];
             else if ([a.content isKindOfClass:[CALayer class]]) [attachmentLayers addObject:a.content];
         }
-        
+
         if (contentsNeedFade) {
             CATransition *transition = [CATransition animation];
             transition.duration = kHighlightFadeDuration;
@@ -1213,7 +1213,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
             [layer addAnimation:transition forKey:@"contents"];
         }
     };
-    
+
     return task;
 }
 
@@ -1293,7 +1293,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     UIEdgeInsets insets = self.textContainerInset;
     insets.left = textInsetLeft;
     self.textContainerInset = insets;
-    
+
 }
 
 - (void)setInsetRight_:(CGFloat)textInsetRight {
