@@ -555,13 +555,23 @@ return style. _attr_;
                                                         width:(CGFloat)width
                                                        ascent:(CGFloat)ascent
                                                       descent:(CGFloat)descent {
+    return [NSMutableAttributedString yy_attachmentStringWithContent:content contentMode:contentMode width:width ascent:ascent descent:descent accessibilityLabel:nil];
+}
+
++ (NSMutableAttributedString *)yy_attachmentStringWithContent:(id)content
+                                                  contentMode:(UIViewContentMode)contentMode
+                                                        width:(CGFloat)width
+                                                       ascent:(CGFloat)ascent
+                                                      descent:(CGFloat)descent
+                                           accessibilityLabel:(NSString *)accessibilityLabel {
     NSMutableAttributedString *atr = [[NSMutableAttributedString alloc] initWithString:YYTextAttachmentToken];
-    
+
     YYTextAttachment *attach = [YYTextAttachment new];
     attach.content = content;
+    attach.accessibilityLabel = accessibilityLabel;
     attach.contentMode = contentMode;
     [atr yy_setTextAttachment:attach range:NSMakeRange(0, atr.length)];
-    
+
     YYTextRunDelegate *delegate = [YYTextRunDelegate new];
     delegate.width = width;
     delegate.ascent = ascent;
@@ -569,7 +579,7 @@ return style. _attr_;
     CTRunDelegateRef delegateRef = delegate.CTRunDelegate;
     [atr yy_setRunDelegate:delegateRef range:NSMakeRange(0, atr.length)];
     if (delegate) CFRelease(delegateRef);
-    
+
     return atr;
 }
 
@@ -578,10 +588,20 @@ return style. _attr_;
                                                attachmentSize:(CGSize)attachmentSize
                                                   alignToFont:(UIFont *)font
                                                     alignment:(YYTextVerticalAlignment)alignment {
+    return [NSAttributedString yy_attachmentStringWithContent:content contentMode:contentMode attachmentSize:attachmentSize alignToFont:font alignment:alignment accessibilityLabel:nil];
+}
+
++ (NSMutableAttributedString *)yy_attachmentStringWithContent:(id)content
+                                                  contentMode:(UIViewContentMode)contentMode
+                                               attachmentSize:(CGSize)attachmentSize
+                                                  alignToFont:(UIFont *)font
+                                                    alignment:(YYTextVerticalAlignment)alignment
+                                           accessibilityLabel:(NSString *)accessibilityLabel {
     NSMutableAttributedString *atr = [[NSMutableAttributedString alloc] initWithString:YYTextAttachmentToken];
     
     YYTextAttachment *attach = [YYTextAttachment new];
     attach.content = content;
+    attach.accessibilityLabel = accessibilityLabel;
     attach.contentMode = contentMode;
     [atr yy_setTextAttachment:attach range:NSMakeRange(0, atr.length)];
     
